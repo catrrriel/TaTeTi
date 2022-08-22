@@ -1,92 +1,132 @@
-const fila1 = ["x", "x", "o"];
-const fila2 = ["x", "o", "x"];
-const fila3 = ["x", "o", "o"];
+/*
+Logica del negocio
+ - Se ingresa de a un dato, cambia de x a 0 cada turno
+ - gana el primero que ahce tateti
+   - por fila
+   - por columna
+   - por diagonal
+ - si se produce un empate se acaba el juego
 
-const arr = [fila1, fila2, fila3];
+Logica de la aplicacion
+ - los datos se ingresan por consola
+ - tengo que implementar un manejo de errores
+   - solo se pueden ingresar de a 2 numeros
+   - no puedo seleccionar una posicion ocupada
+   - solo se pueden ingresar numeros
+   - solo se pueden seleccionar nposiciones dentro de las dimensiones del tablero
+*/
+const board = [
+  ["-", "-", "-"],
+  ["-", "-", "-"],
+  ["-", "-", "-"],
+];
+let turnoCruz = true;
 
-const tateti = (a, b, c) => {
-  if (a === b && b === c) {
-    return a;
-  } else {
-    return false;
+const tateti = (data) => {
+  const [x, y] = [
+    ...data 
+      .toString()
+      .split(",")
+      .map((str) => str * 1),
+  ];
+
+  if (checkError(board, x, y).error) {
+    console.log(checkError(board, x, y).msg);
+    return;
+  }
+
+  board[x][y] = turnoCruz ? "x" : "o";
+  turnoCruz = !turnoCruz;
+
+  showBoard(board);
+  if (checkWin(board).win) {
+    console.log("Ganaste: ", checkWin(board).player);
+    process.exit(0);
+  }
+  if (checkDraw(board)) {
+    console.log("Empataron");
+    process.exit(0);
   }
 };
 
-process.stdin.on("data", (data) => {
-  const print = (val) => {
-    console.log(val);
-  };
-  arr.forEach(print);
-
-  arr.forEach((data) => {
-    if (data.every((val) => val === "x")) {
-      console.log("tateti de x");
-      process.exit();
-    } else if (data.every((val) => val === "o")) {
-      console.log("tateti de o");
-      process.exit();
-    }
+const showBoard = (board) => {
+  board.forEach((row) => {
+    console.log(row);
   });
+};
 
-  const diag1 = tateti(arr[0][0], arr[1][1], arr[2][2]);
-  const diag2 = tateti(arr[0][2], arr[1][1], arr[2][0]);
-  const colum1 = tateti(arr[0][0], arr[1][0], arr[2][0]);
-  const colum2 = tateti(arr[0][1], arr[1][1], arr[2][1]);
-  const colum3 = tateti(arr[0][2], arr[1][2], arr[2][2]);
+const checkRow = (row) => {
+  return row.every((cell, i, arr) => {
+    return cell == arr[0] && cell != "-";
+  });
+};
 
-  if (diag1) {
-    console.log("tateti de", diag1);
-    process.exit();
-  } else if (diag2) {
-    console.log("tateti de", diag2);
-    process.exit();
-  } else if (colum1) {
-    console.log("tateti de", colum1);
-    process.exit();
-  } else if (colum2) {
-    console.log("tateti de", colum2);
-    process.exit();
-  } else if (colum3) {
-    console.log("tateti de", colum3);
-    process.exit();
+const checkColumn = (board, column) => {
+  return board.every((row, i, arr) => {
+    // return row[column] == 'x' || row[column] == 'o'
+    const cell = row[column];
+    return cell == arr[0][column] && cell != "-";
+  });
+};
+
+const checkWin = (board) => {
+  const winObj = {
+    win: false,
+    player: "-",
+  };
+  // row
+  board.forEach((row) => {
+    if (!checkRow(row)) return;
+    winObj.win = true;
+    winObj.player = row[0];
+  });
+  // column
+  const columns = [0, 1, 2];
+  columns.forEach((pos) => {
+    if (!checkColumn(board, pos)) return;
+    winObj.win = true;
+    winObj.player = board[0][pos];
+  });
+  // cross
+  if (board[1][1] == "-") return winObj;
+
+  if (board[0][0] == board[1][1] && board[0][0] == board[2][2]) {
+    winObj.win = true;
+    winObj.player = board[0][0];
   }
+  if (board[0][2] == board[1][1] && board[0][2] == board[2][0]) {
+    winObj.win = true;
+    winObj.player = board[2][0];
+  }
+  return winObj;
+};
 
-  console.log(data.toString());
-});
+const checkDraw = (board) => {
+  return !board.some((row) => {
+    return row.some((cell) => cell == "-");
+  });
+};
 
-// arrlleno.forEach((data) => {
-//   if (data.every((val) => val === "x")) {
-//     console.log("tateti de x");
+const checkError = (board, x, y) => {
+  // ingrese dos numeros
+  if ((!x && x !== 0) || (!y && y !== 0))
+    return { error: true, msg: "tenes que ingresar dos numeros" };
 
-//   } else if (data.every((val) => val === "o")) {
-//     console.log("tateti de o");
-//   } else {
-//     console.log("no tateti");
-//   }
-// });
+  // que este dentro de las dimensiones
+  if (x < 0 || y < 0)
+    return { error: true, msg: "Ingrese una posicion valida" };
 
-// console.log(fila1.every((val) => val === "x"));
+  if (x > board.length || y > board.length)
+    return { error: true, msg: "Ingrese una posicion valida" };
 
-// // console.log(arrlleno);
+  // no ocupe un lugar lleno
+  if (board[x][y] != "-")
+    return { error: true, msg: "El lugar ya esta ocupado" };
 
-// const suma = (a, b) => {
-//   return a + b;
-// };
-// const resta = (a, b) => a - b;
+  return {
+    error: false,
+    msg: "El lugar ya esta ocupado",
+  };
+};
 
-// const calculadora = (operacion, a, b) => {
-//   return operacion(a, b);
-// };
-
-// // console.log(calculadora(suma, 1, 2));
-// // console.log(calculadora(resta, 1, 2));
-
-// const print = (val) => {
-//   console.log(val);
-// };
-
-// // [1, 2, 3].forEach(print);
-
-// (() => {
-//   console.log("hola");
-// })();
+process.stdin.on("data", tateti);
